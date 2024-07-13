@@ -1,0 +1,93 @@
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Scanner;
+
+public class CurrencyConverterApp {
+    private static final String API_KEY = "fb76a7551f869d3319173d02";
+    private static final String BASE_URL = "https://v6.exchangerate-api.com/v6/";
+
+    public CurrencyConverterApp() {
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        boolean exit = false;
+
+        while(!exit) {
+            System.out.println("==== Conversor de Monedas ====");
+            System.out.println("1. Convertir USD a ARS");
+            System.out.println("2. Convertir USD a BOB");
+            System.out.println("3. Convertir USD a BRL");
+            System.out.println("4. Convertir USD a CLP");
+            System.out.println("5. Convertir USD a COP");
+            System.out.println("6. Salir");
+            System.out.print("Ingrese el número de la opción deseada: ");
+            int option = scanner.nextInt();
+            switch (option) {
+                case 1:
+                    convertUSDToCurrency("ARS");
+                    break;
+                case 2:
+                    convertUSDToCurrency("BOB");
+                    break;
+                case 3:
+                    convertUSDToCurrency("BRL");
+                    break;
+                case 4:
+                    convertUSDToCurrency("CLP");
+                    break;
+                case 5:
+                    convertUSDToCurrency("COP");
+                    break;
+                case 6:
+                    exit = true;
+                    System.out.println("Saliendo del programa...");
+                    break;
+                default:
+                    System.out.println("Opción no válida. Por favor, ingrese una opción válida.");
+            }
+        }
+
+        scanner.close();
+    }
+
+    private static void convertUSDToCurrency(String currencyCode) {
+        HttpClient client = HttpClient.newHttpClient();
+        String endpoint = "https://v6.exchangerate-api.com/v6/fb76a7551f869d3319173d02/latest/USD";
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(endpoint)).header("Content-Type", "application/json").header("Accept", "application/json").GET().build();
+
+        try {
+            HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+            String responseBody = (String)response.body();
+            Gson gson = new Gson();
+            ExchangeRateResponse exchangeRateResponse = (ExchangeRateResponse)gson.fromJson(responseBody, ExchangeRateResponse.class);
+            Rates rates = exchangeRateResponse.getRates();
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Ingrese la cantidad en USD a convertir a " + currencyCode + ": ");
+            double usdAmount = scanner.nextDouble();
+            double convertedAmount = usdAmount * getRateForCurrency(rates, currencyCode);
+            System.out.println("" + usdAmount + " USD equivale a " + convertedAmount + " " + currencyCode);
+        } catch (InterruptedException | JsonSyntaxException | IOException var14) {
+            Exception e = var14;
+            e.printStackTrace();
+        }
+
+    }
+
+    private static double getRateForCurrency(Rates rates, String currencyCode) {
+        switch (currencyCode) {
+            case "ARS" -> return rates.getARS();
+            case "BOB" -> return rates.getBOB();
+            case "BRL" -> return rates.getBRL();
+            case "CLP" -> return rates.getCLP();
+            case "COP" -> return rates.getCOP();
+            default -> throw new IllegalArgumentException("Currency code not supported: " + currencyCode);
+        }
+    }
+}
